@@ -6,9 +6,10 @@ import { useNavigation } from '@react-navigation/native';
 interface headerProps {
   name: string;
   type: number;
+  setModal?: () => void; 
 }
 
-export default function Header({name, type}: headerProps) {
+export default function Header({name, type, setModal}: headerProps) {
   const navigation = useNavigation();
 
   return (
@@ -32,14 +33,14 @@ export default function Header({name, type}: headerProps) {
         <FontAwesome 
           name="bars" 
           size={30} color="#3CB371" 
-          onPress={() => navigation.navigate("Menu")}
+          onPress={setModal}
         />
       )}
       {type === 2 && (
         <FontAwesome 
           name="times" 
           size={30} color="#3CB371" 
-          onPress={() => navigation.navigate("Menu")}
+          onPress={() => navigation.navigate("index")}
         />
       )}
     </View>

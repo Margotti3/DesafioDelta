@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import { ScrollView, TextInput } from 'react-native-gesture-handler';
+import { RectButton, ScrollView, TextInput } from 'react-native-gesture-handler';
+import { FontAwesome } from '@expo/vector-icons';
+import Header from '../components/Header';
 
 export default function List() {
+  const [modalVisible, setModalVisible] = useState(false);
+
   return (
     <ScrollView>
+      <Header name="cleiton" type={1} setModal={() => setModalVisible(visible => !visible)} />
       <View style={styles.profileImg} />
       <Text style={styles.label}>Nome</Text>
       <View style={styles.input}>
@@ -91,11 +96,66 @@ export default function List() {
       </View>
       
       <View style={styles.footer} />
+
+      {modalVisible && (
+        <View style={styles.modalState}>
+          <View style={styles.close}>
+            <FontAwesome 
+              name="bars" 
+              size={30} color="#3CB371" 
+              onPress={() => setModalVisible(visible => !visible)}
+            />
+          </View>
+          
+          <View style={styles.modal}>
+            <RectButton style={styles.buttonOption}>
+              <Text style={styles.textOption}>Editar</Text>
+              <FontAwesome name="edit" size={30} color="#ffc721" /> 
+            </RectButton>
+            <RectButton style={styles.buttonOption}>
+              <Text style={styles.textOption}>Excluir</Text>
+              <FontAwesome name="times" size={30} color="#ff3535" /> 
+            </RectButton>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  modalState: {
+    position: 'absolute',
+    height: Dimensions.get('window').height,
+    width: Dimensions.get('window').width,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  close: {
+    alignSelf: 'flex-end',
+    padding: 10,
+  },
+  modal: {
+    alignSelf: 'flex-end',
+    marginTop: 10,
+    width: 150,
+    height: 100,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 0,
+  },
+  buttonOption: {
+    width: 150,
+    height: 50,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderBottomColor: '#bbb',
+    borderBottomWidth: 1
+  },
+  textOption: {
+    fontSize: 20,
+    color: '#333',
+  },
   profileImg: {
     height: 150,
     width: 150,
