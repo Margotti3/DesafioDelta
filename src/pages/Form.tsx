@@ -1,34 +1,69 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Dimensions, Image, ImageSourcePropType, StyleSheet, Text, View } from 'react-native';
 import { RectButton, ScrollView, TextInput } from 'react-native-gesture-handler';
 
 import cep from 'cep-promise';
-import ContentLoader from 'react-content-loader';
-import { Circle, Rect } from 'react-native-svg';
-interface viaCepResponse {
-  bairro: string;
+import { RouteProp, useNavigation } from '@react-navigation/core';
+import api from '../services/api';
+import * as ImagePicker from 'expo-image-picker';
+import * as Yup from 'yup';
+import { ValidationError } from "yup";
+
+interface Props {
+  route: RouteProp<{params: {id: number}}, 'params'>
 }
 
-export default function Form() {
-  const id = null;
+interface ValidationErrors {
+  [key: string]: string[];
+}
+
+export default function Form({ route }: Props) {
+  const id = route.params ? route.params.id : null;
+  const navigation = useNavigation();
+
+  const [image, setImage] = useState<string>('');
   const [name, setName] = useState('');
   const [CEP, setCEP] = useState('');
   const [uf, setUf] = useState('');
   const [city, setCity] = useState('');
-  const [neighborhood, setNeigborhood] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const [street, setStreet] = useState('');
   const [number, setNumber] = useState('');
   const [complement, setComplement] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [loadingForm, setLoadingForm] = useState(true);
+  const [errors, setErrors] = useState<any>();
 
   useEffect(() => {
-    if (id) {
-      console.log('opa');
+    async function loadStudent() {
+      try {
+        const response = await api.get(`/students/${id}`);
+        const { data } = response;
+
+        setName(data.name);
+        setImage(data.profileImg);
+        setCEP(String(data.zipcode));
+        setUf(data.state);
+        setCity(data.city);
+        setNeighborhood(data.neighborhood);
+        setStreet(data.street);
+        setNumber(String(data.number));
+        setComplement(data.complement);
+
+        setLoadingForm(false);
+      } catch (err) {
+        alert('Houve um erro de servidor, tente novamente.');
+        navigation.navigate('index');
+      }
     }
 
-    setLoadingForm(false);
-  }, []);
+    if (id) {
+      loadStudent();
+    } else {
+      setLoadingForm(false);
+    }
+  }, [id]);
 
   useEffect(() => {
     async function loadAddress() {
@@ -38,7 +73,7 @@ export default function Form() {
       
         setUf(response.state);
         setCity(response.city);
-        setNeigborhood(response.neighborhood);
+        setNeighborhood(response.neighborhood);
         setStreet(response.street);
 
       } catch (err) {
@@ -53,51 +88,163 @@ export default function Form() {
     }
   }, [CEP]);
 
-  function handleSubmitForm() {
+  const handleAddProgileImg = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-  }
+    if (status !== 'granted') {
+      alert('Precisamos acessar suas fotos');
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      quality: 1,
+      aspect: [3, 3],
+      mediaType: ImagePicker.MediaTypeOptions.Images,
+    });
+
+    if (result.cancelled) {
+      return;
+    }
+
+    const { uri } = result;
+
+    setImage(uri);
+  }, []);
+
+  const handleSubmitForm = useCallback(async () => {
+    setLoading(true);
+
+    if (!image) {
+      alert('Escolha uma imagem!');
+      setLoading(false);
+    } else {
+      try {
+        const schema = Yup.object().shape({
+          name: Yup.string().required('O nome é obrigatório'),
+          zipcode: Yup.string().required('O CEP é obrigatório')
+            .min(8, 'O cep deve ter 8 números')
+            .max(8, 'O cep deve ter 8 números'),
+          city: Yup.string().required('A cidade é obrigatório'),
+          state: Yup.string().required('O estado é obrigatório'),
+          street: Yup.string().required('A rua é obrigatório'),
+          neighborhood: Yup.string().required('O bairro é obrigatório'),
+          number: Yup.number().typeError('O número é obrigatório')
+            .required('O número é obrigatório'),
+          complement: Yup.string(),
+        });
+
+        await schema.validate({
+          name,
+          zipcode: cep,
+          city,
+          state: uf,
+          street,
+          neighborhood,
+          number,
+          complement,
+        }, {
+          abortEarly: false,
+        });
+
+        const data = new FormData();
+
+        data.append('name', name);
+        data.append('zipcode', CEP);
+        data.append('city', city);
+        data.append('state', uf);
+        data.append('street', street);
+        data.append('neighborhood', neighborhood);
+        data.append('number', number);
+        data.append('complement', complement);
+        data.append('file', {
+          name: 'image.jpg',
+          type: 'image/*',
+          uri: image
+        } as any);
+
+        if (id) {
+          await api.put(`/students/${id}`, data);
+        }
+        else {
+          await api.post('/students', data);
+        }
+
+        navigation.navigate('index');
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          let errors: ValidationErrors = {};
+      
+          err.inner.forEach(error => {
+            errors[error.path || ''] = error.errors;
+          });
+          setErrors(errors);
+          alert('Prencha todos os campor corretamente.');
+        }
+        else {
+          alert('Houve um erro de servidor, tente novamente.');
+        }
+      }
+      setLoading(false);
+    }
+  }, [
+    name,
+    cep,
+    city,
+    uf,
+    street,
+    neighborhood,
+    number,
+    complement,
+    image,
+    id
+  ]);
 
   return (
     <>
       {loadingForm ? (
-        <ContentLoader 
-          speed={2}
-          width={400}
-          height={800}
-          backgroundColor={'#fff'}
-          foregroundColor={'#2E8B57'}
-        >
-          <Circle r="60" cy="80" cx={Dimensions.get('window').width/2} />
-          <Rect x="10" y="180" rx="15" ry="15" width={Dimensions.get('window').width - 20} height="40" />
-          <Rect x="10" y="250" rx="15" ry="15" width={Dimensions.get('window').width - 20} height="40" />
-          <Rect x="10" y="320" rx="15" ry="15" width={Dimensions.get('window').width - 20} height="40" />
-          <Rect x="10" y="390" rx="15" ry="15" width={Dimensions.get('window').width - 20} height="40" />
-        </ContentLoader>
+        <View style={styles.loading }>
+          <ActivityIndicator size="large" color="#3CB371" />
+        </View>
       ) : (
         <ScrollView>
-          <View style={styles.profileImg} />
+          {image ? (
+            <RectButton onPress={handleAddProgileImg}>
+              <Image source={{uri: image}} style={styles.profileImg} />
+            </RectButton>
+          ) : (
+            <RectButton onPress={handleAddProgileImg}>
+              <View style={styles.profileImg} />
+            </RectButton>
+          )}
+          
           <Text style={styles.label}>Nome</Text>
           <View style={styles.input}>
             <TextInput
               style={styles.textInput}
               autoFocus={true}
-              placeholder="João Cleber"
+              placeholder="Ex.: João Cleber"
               value={name}
               onChangeText={setName}
             />
           </View>
+          {errors && errors.name && (
+            <Text style={styles.error}>{errors.name[0]}</Text>
+          )}
           
           <Text style={styles.label}>CEP</Text>
           <View style={styles.input}>
             <TextInput
               style={styles.textInput}
               keyboardType="numeric"
-              placeholder="99999999"
+              placeholder="Ex.: 99999999"
               maxLength={8}
               value={CEP}
               onChangeText={setCEP}
             />
           </View>
+          {errors && errors.zipcode && (
+            <Text style={styles.error}>{errors.zipcode[0]}</Text>
+          )}
           
           <View style={styles.inputsRow}>
             <View>
@@ -148,19 +295,24 @@ export default function Form() {
               <Text style={styles.label}>Número</Text>
               <View style={styles.number}>
                 <TextInput
-                  style={styles.textInput}
+                  style={styles.textInputNumber}
                   value={number}
+                  maxLength={6}
                   onChangeText={setNumber}
+                  keyboardType="numeric"
                 />
               </View>
             </View>
           </View>
+            {errors && errors.number && (
+              <Text style={styles.errorNumber}>{errors.number[0]}</Text>
+            )}
           
           <Text style={styles.label}>Complemento</Text>
           <View style={styles.input}>
             <TextInput
               style={styles.textInput}
-              placeholder="Apartamento 205"
+              placeholder="Ex.: Apartamento 205"
               value={complement}
               onChangeText={setComplement}
             />
@@ -197,7 +349,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 15,
     marginHorizontal: 15,
-    fontFamily: 'arial',
     fontSize: 13,
     color: '#2E8B57',
   },
@@ -207,10 +358,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10
   },
+  error: {
+    color: '#ff4444',
+    marginLeft: 8,
+  },
+  errorNumber: {
+    color: '#ff4444',
+    marginRight: 8,
+    alignSelf: 'flex-end',
+  },
   textInput: {
     marginHorizontal: 10,
     height: 40,
     minWidth: 80
+  },
+  textInputNumber: {
+    marginHorizontal: 10,
+    height: 40,
+    maxWidth: 80
   },
   inputsRow: {
     flexDirection: 'row',
@@ -230,14 +395,14 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   street: {
-    width: Dimensions.get('window').width - 92,
+    width: Dimensions.get('window').width - 112,
     marginHorizontal: 8,
     height: 40,
     backgroundColor: '#fff',
     borderRadius: 10
   },
   number: {
-    width: 60,
+    width: 80,
     marginHorizontal: 8,
     height: 40,
     backgroundColor: '#fff',

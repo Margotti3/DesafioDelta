@@ -23,15 +23,15 @@ export default function Routes() {
           component={Crud} 
           options={{
             headerShown: true,
-            header: () => <Header name="Estudantes" type={0} />
+            header: () => <Header name="Alunos" type={0} />
           }} 
         />
         <Screen 
-          name="Student" 
+          name="student" 
           component={List}
         />
         <Screen 
-          name="Form" 
+          name="form" 
           component={Form}
           options={{
             headerShown: true,
