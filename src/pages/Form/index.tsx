@@ -1,13 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, ImageSourcePropType, StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { RectButton, ScrollView, TextInput } from 'react-native-gesture-handler';
 
 import cep from 'cep-promise';
 import { RouteProp, useNavigation } from '@react-navigation/core';
-import api from '../services/api';
+import api from '../../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import * as Yup from 'yup';
 import { ValidationError } from "yup";
+
+import Loading from '../../components/Loading';
+import LoadingData from '../../components/LoadingData';
+
+import { styles } from './styles'
+import Header from '../../components/Header';
 
 interface Props {
   route: RouteProp<{params: {id: number}}, 'params'>
@@ -77,7 +83,8 @@ export default function Form({ route }: Props) {
         setStreet(response.street);
 
       } catch (err) {
-        console.log(err);
+        alert('Sem resultados para o CEP digitado.');
+        setCEP('');
       } finally {
         setLoading(false);
       }
@@ -122,8 +129,7 @@ export default function Form({ route }: Props) {
         const schema = Yup.object().shape({
           name: Yup.string().required('O nome é obrigatório'),
           zipcode: Yup.string().required('O CEP é obrigatório')
-            .min(8, 'O cep deve ter 8 números')
-            .max(8, 'O cep deve ter 8 números'),
+            .test('len', 'O CEP deve conter 8 números', val => val?.length === 8),
           city: Yup.string().required('A cidade é obrigatório'),
           state: Yup.string().required('O estado é obrigatório'),
           street: Yup.string().required('A rua é obrigatório'),
@@ -135,7 +141,7 @@ export default function Form({ route }: Props) {
 
         await schema.validate({
           name,
-          zipcode: cep,
+          zipcode: CEP,
           city,
           state: uf,
           street,
@@ -188,7 +194,7 @@ export default function Form({ route }: Props) {
     }
   }, [
     name,
-    cep,
+    CEP,
     city,
     uf,
     street,
@@ -202,11 +208,10 @@ export default function Form({ route }: Props) {
   return (
     <>
       {loadingForm ? (
-        <View style={styles.loading }>
-          <ActivityIndicator size="large" color="#3CB371" />
-        </View>
+        <LoadingData />
       ) : (
         <ScrollView>
+          <Header name={id ? 'Editar' : 'Novo'}  type={2} />
           {image ? (
             <RectButton onPress={handleAddProgileImg}>
               <Image source={{uri: image}} style={styles.profileImg} />
@@ -327,110 +332,9 @@ export default function Form({ route }: Props) {
       )}
       
       {loading && (
-        <View style={styles.loading }>
-          <ActivityIndicator size="large" color="#3CB371" />
-        </View>
+        <Loading />
       )}
       
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  profileImg: {
-    height: 150,
-    width: 150,
-    margin: 20,
-    alignSelf: 'center',
-    borderRadius: 500,
-    backgroundColor: '#eee'
-  },
-  label: {
-    marginBottom: 8,
-    marginTop: 15,
-    marginHorizontal: 15,
-    fontSize: 13,
-    color: '#2E8B57',
-  },
-  input: {
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  error: {
-    color: '#ff4444',
-    marginLeft: 8,
-  },
-  errorNumber: {
-    color: '#ff4444',
-    marginRight: 8,
-    alignSelf: 'flex-end',
-  },
-  textInput: {
-    marginHorizontal: 10,
-    height: 40,
-    minWidth: 80
-  },
-  textInputNumber: {
-    marginHorizontal: 10,
-    height: 40,
-    maxWidth: 80
-  },
-  inputsRow: {
-    flexDirection: 'row',
-  },
-  uf: {
-    width: 45,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  city: {
-    width: Dimensions.get('window').width - 77,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  street: {
-    width: Dimensions.get('window').width - 112,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  number: {
-    width: 80,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  submit: {
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 250,
-    height: 40,
-    backgroundColor: '#2E8B57',
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  textSubmit: {
-    color: '#fff',
-    fontSize: 23,
-  },
-  footer: {
-    height: 20,
-  },
-  loading: {
-    position: 'absolute',
-    height: Dimensions.get('window').height,
-    width: Dimensions.get('window').width,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

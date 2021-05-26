@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, ImageSourcePropType, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Text, View } from 'react-native';
 import { RectButton, ScrollView, TextInput } from 'react-native-gesture-handler';
 import { FontAwesome } from '@expo/vector-icons';
-import Header from '../components/Header';
-import api from '../services/api';
 import { RouteProp, useNavigation } from '@react-navigation/native';
+
+import Header from '../../components/Header';
+import api from '../../services/api';
+import LoadingData from '../../components/LoadingData';
+import { styles } from './styles';
 
 interface Props {
   route: RouteProp<{params: {id: number}}, 'params'>
@@ -23,7 +26,7 @@ interface Student {
   complement: string,
 }
 
-export default function List({ route }: Props) {
+export default function Student({ route }: Props) {
   const { id } = route.params
   const navigation = useNavigation();
 
@@ -82,9 +85,7 @@ export default function List({ route }: Props) {
   return (
     <>
       {loadingData || !student ? (
-        <View style={styles.loading }>
-          <ActivityIndicator size="large" color="#3CB371" />
-        </View>
+        <LoadingData />
       ) : (
         <ScrollView>
           <Header name="cleiton" type={1} setModal={() => setModalVisible(visible => !visible)} />
@@ -207,106 +208,3 @@ export default function List({ route }: Props) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    position: 'absolute',
-    height: Dimensions.get('window').height,
-    width: Dimensions.get('window').width,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalState: {
-    position: 'absolute',
-    height: Dimensions.get('window').height,
-    width: Dimensions.get('window').width,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  close: {
-    alignSelf: 'flex-end',
-    padding: 10,
-  },
-  modal: {
-    alignSelf: 'flex-end',
-    marginTop: 10,
-    width: 150,
-    height: 100,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 0,
-  },
-  buttonOption: {
-    width: 150,
-    height: 50,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderBottomColor: '#bbb',
-    borderBottomWidth: 1
-  },
-  textOption: {
-    fontSize: 20,
-    color: '#333',
-  },
-  profileImg: {
-    height: 150,
-    width: 150,
-    margin: 20,
-    alignSelf: 'center',
-    borderRadius: 500,
-    backgroundColor: '#eee'
-  },
-  label: {
-    marginBottom: 8,
-    marginTop: 15,
-    marginHorizontal: 15,
-    fontSize: 13,
-    color: '#2E8B57',
-  },
-  input: {
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  textInput: {
-    marginHorizontal: 10,
-    height: 40,
-    minWidth: 80
-  },
-  inputsRow: {
-    flexDirection: 'row',
-  },
-  uf: {
-    width: 45,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  city: {
-    width: Dimensions.get('window').width - 77,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  street: {
-    width: Dimensions.get('window').width - 112,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  number: {
-    width: 80,
-    marginHorizontal: 8,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 10
-  },
-  footer: {
-    height: 20,
-  }
-});

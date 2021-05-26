@@ -2,8 +2,8 @@ import React from 'react';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import Crud from './pages/Crud';
 import List from './pages/List';
+import Student from './pages/Student';
 import Header from './components/Header';
 import Form from './pages/Form';
 
@@ -20,7 +20,7 @@ export default function Routes() {
       >
         <Screen 
           name="index" 
-          component={Crud} 
+          component={List} 
           options={{
             headerShown: true,
             header: () => <Header name="Alunos" type={0} />
@@ -28,15 +28,11 @@ export default function Routes() {
         />
         <Screen 
           name="student" 
-          component={List}
+          component={Student}
         />
         <Screen 
           name="form" 
           component={Form}
-          options={{
-            headerShown: true,
-            header: () => <Header name="NOVO" type={2} />
-          }} 
         />
       </Navigator>
     </NavigationContainer>
